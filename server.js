@@ -82,6 +82,11 @@ mongoose
 // SERVER
 const PORT = process.env.PORT || 9292;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+// app.listen(PORT, () => {
+//   console.log(`🚀 Server running on port ${PORT}`);
+// });
+app.get("/", (req, res) => {
+  res.send("API Running");
 });
+
+module.exports = app;
