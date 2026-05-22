@@ -8,441 +8,411 @@ const Vender = require("./vender.model");
 
 const multer = require("multer");
 
-const nodemailer = require("nodemailer");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
-const fs = require("fs");
+const nodemailer = require("nodemailer");
 
 const { v2: cloudinary } = require("cloudinary");
 
 // ================= CLOUDINARY =================
 cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME,
+  cloud_name: process.env.CLOUD_NAME,
 
-    api_key: process.env.CLOUD_API_KEY,
+  api_key: process.env.CLOUD_API_KEY,
 
-    api_secret: process.env.CLOUD_API_SECRET
+  api_secret: process.env.CLOUD_API_SECRET,
 });
 
 console.log("Cloudinary Ready");
 
-// ================= MULTER =================
+// ================= CLOUDINARY STORAGE =================
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+
+  params: {
+    folder: "vendor_images",
+
+    allowed_formats: ["jpg", "jpeg", "png"],
+  },
+});
+
 const upload = multer({
-    dest: "uploads/"
+  storage: storage,
 });
 
 // ================= REGISTER =================
 venderRoute.post(
-    "/register",
+  "/register",
 
-    upload.single("file"),
+  upload.single("file"),
 
-    async (req, res) => {
+  async (req, res) => {
+    try {
+      const exists = await Vender.findOne({
+        $or: [
+          { VUserId: req.body.VUserId },
+          { VEmail: req.body.VEmail },
+        ],
+      });
 
-        try {
+      if (exists) {
+        return res
+          .status(400)
+          .send("VUserId or Email already exists");
+      }
 
-            const exists = await Vender.findOne({
-                $or: [
-                    { VUserId: req.body.VUserId },
-                    { VEmail: req.body.VEmail }
-                ]
-            });
+      let imageUrl = "";
 
-            if (exists) {
+      // ================= CLOUDINARY IMAGE URL =================
+      if (req.file) {
+        imageUrl = req.file.path;
+      }
 
-                return res.status(400).send(
-                    "VUserId or Email already exists"
-                );
-            }
+      const maxVidDoc = await Vender.findOne().sort({
+        Vid: -1,
+      });
 
-            let imageUrl = "";
+      const newVid = maxVidDoc
+        ? maxVidDoc.Vid + 1
+        : 1;
 
-            // ================= CLOUDINARY UPLOAD =================
-            if (req.file) {
+      const vendor = new Vender({
+        ...req.body,
 
-                const result = await cloudinary.uploader.upload(
-                    req.file.path,
-                    {
-                        folder: "vendor_images"
-                    }
-                );
+        VPicName: imageUrl,
 
-                imageUrl = result.secure_url;
+        Vid: newVid,
+      });
 
-                // delete temp file
-                fs.unlinkSync(req.file.path);
-            }
+      await vendor.save();
 
-            const maxVidDoc = await Vender.findOne()
-                .sort({ Vid: -1 });
+      res.send("Registration Successful");
+    } catch (err) {
+      console.log(err);
 
-            const newVid = maxVidDoc
-                ? maxVidDoc.Vid + 1
-                : 1;
-
-            const vendor = new Vender({
-                ...req.body,
-
-                VPicName: imageUrl,
-
-                Vid: newVid
-            });
-
-            await vendor.save();
-
-            res.send("Registration Successful");
-
-        } catch (err) {
-
-            console.log(err);
-
-            res.status(500).send(
-                "Registration Failed"
-            );
-        }
+      res
+        .status(500)
+        .send("Registration Failed");
     }
+  }
 );
 
 // ================= LOGIN =================
-venderRoute.post("/login", async (req, res) => {
+venderRoute.post(
+  "/login",
 
+  async (req, res) => {
     const { vuid, vupass } = req.body;
 
     try {
+      const vendor = await Vender.findOne({
+        VUserId: vuid,
 
-        const vendor = await Vender.findOne({
-            VUserId: vuid,
-            VUserPass: vupass
-        });
+        VUserPass: vupass,
+      });
 
-        if (!vendor) {
+      if (!vendor) {
+        return res
+          .status(401)
+          .send("Invalid Credentials");
+      }
 
-            return res.status(401).send(
-                "Invalid Credentials"
-            );
-        }
-
-        res.send(vendor);
-
+      res.send(vendor);
     } catch (err) {
-
-        res.status(500).send("Server Error");
+      res.status(500).send("Server Error");
     }
-});
+  }
+);
 
 // ================= GET ALL =================
-venderRoute.get("/getvendercount", async (req, res) => {
+venderRoute.get(
+  "/getvendercount",
 
+  async (req, res) => {
     try {
+      const vendors = await Vender.find();
 
-        const vendors = await Vender.find();
-
-        res.send(vendors);
-
+      res.send(vendors);
     } catch (err) {
-
-        res.status(500).send("Server Error");
+      res.status(500).send("Server Error");
     }
-});
+  }
+);
 
 // ================= STATUS UPDATE =================
 venderRoute.put(
-    "/vendermanage/:vid/:status",
+  "/vendermanage/:vid/:status",
 
-    async (req, res) => {
+  async (req, res) => {
+    try {
+      await Vender.updateOne(
+        { Vid: req.params.vid },
 
-        try {
-
-            await Vender.updateOne(
-                { Vid: req.params.vid },
-                {
-                    $set: {
-                        Status: req.params.status
-                    }
-                }
-            );
-
-            res.send("Vendor status updated");
-
-        } catch (err) {
-
-            res.status(500).send(err);
+        {
+          $set: {
+            Status: req.params.status,
+          },
         }
+      );
+
+      res.send("Vendor status updated");
+    } catch (err) {
+      res.status(500).send(err);
     }
+  }
 );
 
 // ================= UPDATE PROFILE =================
 venderRoute.put(
-    "/update/:VUserId",
+  "/update/:VUserId",
 
-    upload.single("file"),
+  upload.single("file"),
 
-    async (req, res) => {
+  async (req, res) => {
+    try {
+      const VUserId = req.params.VUserId;
 
-        try {
+      const vendor = await Vender.findOne({
+        VUserId,
+      });
 
-            const VUserId = req.params.VUserId;
+      if (!vendor) {
+        return res
+          .status(404)
+          .send("Vendor not found");
+      }
 
-            const vendor = await Vender.findOne({
-                VUserId
-            });
+      let imageUrl = vendor.VPicName;
 
-            if (!vendor) {
+      // ================= NEW IMAGE =================
+      if (req.file) {
+        imageUrl = req.file.path;
+      }
 
-                return res.status(404).send(
-                    "Vendor not found"
-                );
-            }
+      const updateData = {
+        VenderName:
+          req.body.VenderName ||
+          vendor.VenderName,
 
-            let imageUrl = vendor.VPicName;
+        VAddress:
+          req.body.VAddress ||
+          vendor.VAddress,
 
-            // ================= CLOUDINARY UPLOAD =================
-            if (req.file) {
+        VContact:
+          req.body.VContact ||
+          vendor.VContact,
 
-                const result = await cloudinary.uploader.upload(
-                    req.file.path,
-                    {
-                        folder: "vendor_images"
-                    }
-                );
+        VEmail:
+          req.body.VEmail ||
+          vendor.VEmail,
 
-                imageUrl = result.secure_url;
+        VPicName: imageUrl,
+      };
 
-                // delete temp file
-                fs.unlinkSync(req.file.path);
-            }
+      await Vender.updateOne(
+        { VUserId },
 
-            const updateData = {
-                VenderName:
-                    req.body.VenderName ||
-                    vendor.VenderName,
-
-                VAddress:
-                    req.body.VAddress ||
-                    vendor.VAddress,
-
-                VContact:
-                    req.body.VContact ||
-                    vendor.VContact,
-
-                VEmail:
-                    req.body.VEmail ||
-                    vendor.VEmail,
-
-                VPicName: imageUrl
-            };
-
-            await Vender.updateOne(
-                { VUserId },
-                {
-                    $set: updateData
-                }
-            );
-
-            res.send({
-                message:
-                    "Profile updated successfully",
-
-                updateData
-            });
-
-        } catch (err) {
-
-            console.log(err);
-
-            res.status(500).send(
-                "Error updating profile"
-            );
+        {
+          $set: updateData,
         }
+      );
+
+      res.send({
+        message:
+          "Profile updated successfully",
+
+        updateData,
+      });
+    } catch (err) {
+      console.log(err);
+
+      res
+        .status(500)
+        .send("Error updating profile");
     }
+  }
 );
 
 // ================= OTP STORE =================
 let otpStore = {};
 
 // ================= SEND OTP =================
-venderRoute.post("/send-otp", async (req, res) => {
+venderRoute.post(
+  "/send-otp",
 
+  async (req, res) => {
     try {
+      const { VUserId } = req.body;
 
-        const { VUserId } = req.body;
+      const vendor = await Vender.findOne({
+        VUserId,
+      });
 
-        const vendor = await Vender.findOne({
-            VUserId
+      if (!vendor) {
+        return res.status(404).json({
+          success: false,
+
+          message: "Vendor not found",
+        });
+      }
+
+      const otp = Math.floor(
+        100000 + Math.random() * 900000
+      ).toString();
+
+      otpStore[VUserId] = otp;
+
+      let transporter =
+        nodemailer.createTransport({
+          service: "gmail",
+
+          auth: {
+            user: process.env.GMAIL_USER,
+
+            pass: process.env.GMAIL_APP_PASS,
+          },
         });
 
-        if (!vendor) {
+      await transporter.sendMail({
+        from: process.env.GMAIL_USER,
 
-            return res.status(404).json({
-                success: false,
-                message: "Vendor not found"
-            });
-        }
+        to: vendor.VEmail,
 
-        const otp = Math.floor(
-            100000 + Math.random() * 900000
-        ).toString();
+        subject: "Vendor Password Reset OTP",
 
-        otpStore[VUserId] = otp;
+        text: `Your OTP is ${otp}`,
+      });
 
-        let transporter =
-            nodemailer.createTransport({
-                service: "gmail",
+      res.json({
+        success: true,
 
-                auth: {
-                    user: process.env.GMAIL_USER,
-
-                    pass: process.env.GMAIL_APP_PASS
-                }
-            });
-
-        await transporter.sendMail({
-            from: process.env.GMAIL_USER,
-
-            to: vendor.VEmail,
-
-            subject: "Vendor Password Reset OTP",
-
-            text: `Your OTP is ${otp}`
-        });
-
-        res.json({
-            success: true,
-            message: "OTP sent"
-        });
-
+        message: "OTP sent",
+      });
     } catch (err) {
+      console.log(err);
 
-        console.log(err);
+      res.status(500).json({
+        success: false,
 
-        res.status(500).json({
-            success: false,
-            message: "Error sending OTP"
-        });
+        message: "Error sending OTP",
+      });
     }
-});
+  }
+);
 
 // ================= RESET PASSWORD =================
 venderRoute.post(
-    "/reset-password",
+  "/reset-password",
 
-    async (req, res) => {
+  async (req, res) => {
+    try {
+      const {
+        VUserId,
+        otp,
+        newPassword,
+      } = req.body;
 
-        try {
+      if (
+        !otpStore[VUserId] ||
+        otpStore[VUserId] !== otp
+      ) {
+        return res.status(400).json({
+          success: false,
 
-            const {
-                VUserId,
-                otp,
-                newPassword
-            } = req.body;
+          message: "Invalid OTP",
+        });
+      }
 
-            if (
-                !otpStore[VUserId] ||
-                otpStore[VUserId] !== otp
-            ) {
+      await Vender.updateOne(
+        { VUserId },
 
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid OTP"
-                });
-            }
-
-            await Vender.updateOne(
-                { VUserId },
-
-                {
-                    $set: {
-                        VUserPass: newPassword
-                    }
-                }
-            );
-
-            delete otpStore[VUserId];
-
-            res.json({
-                success: true,
-                message:
-                    "Password reset successful"
-            });
-
-        } catch (err) {
-
-            console.log(err);
-
-            res.status(500).json({
-                success: false,
-                message:
-                    "Error resetting password"
-            });
+        {
+          $set: {
+            VUserPass: newPassword,
+          },
         }
+      );
+
+      delete otpStore[VUserId];
+
+      res.json({
+        success: true,
+
+        message:
+          "Password reset successful",
+      });
+    } catch (err) {
+      console.log(err);
+
+      res.status(500).json({
+        success: false,
+
+        message:
+          "Error resetting password",
+      });
     }
+  }
 );
 
 // ================= CHANGE PASSWORD =================
 venderRoute.post(
-    "/changepassword",
+  "/changepassword",
 
-    async (req, res) => {
+  async (req, res) => {
+    try {
+      const {
+        VUserId,
+        OldPassword,
+        newPassword,
+      } = req.body;
 
-        try {
+      if (
+        !VUserId ||
+        !OldPassword ||
+        !newPassword
+      ) {
+        return res.status(400).json({
+          message:
+            "All fields required",
+        });
+      }
 
-            const {
-                VUserId,
-                OldPassword,
-                newPassword
-            } = req.body;
+      const vendor = await Vender.findOne({
+        VUserId,
+      });
 
-            if (
-                !VUserId ||
-                !OldPassword ||
-                !newPassword
-            ) {
+      if (!vendor) {
+        return res.status(404).json({
+          message:
+            "Vendor not found",
+        });
+      }
 
-                return res.status(400).json({
-                    message:
-                        "All fields required"
-                });
-            }
+      if (
+        vendor.VUserPass !== OldPassword
+      ) {
+        return res.status(400).json({
+          message:
+            "Old password incorrect",
+        });
+      }
 
-            const vendor = await Vender.findOne({
-                VUserId
-            });
+      vendor.VUserPass = newPassword;
 
-            if (!vendor) {
+      await vendor.save();
 
-                return res.status(404).json({
-                    message:
-                        "Vendor not found"
-                });
-            }
+      res.json({
+        message:
+          "Password changed successfully",
+      });
+    } catch (err) {
+      console.log(err);
 
-            if (
-                vendor.VUserPass !== OldPassword
-            ) {
-
-                return res.status(400).json({
-                    message:
-                        "Old password incorrect"
-                });
-            }
-
-            vendor.VUserPass = newPassword;
-
-            await vendor.save();
-
-            res.json({
-                message:
-                    "Password changed successfully"
-            });
-
-        } catch (err) {
-
-            console.log(err);
-
-            res.status(500).json({
-                message: "Server error"
-            });
-        }
+      res.status(500).json({
+        message: "Server error",
+      });
     }
+  }
 );
 
 module.exports = venderRoute;
