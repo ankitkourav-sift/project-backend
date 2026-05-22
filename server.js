@@ -184,3 +184,4 @@ const PORT = process.env.PORT || 9292;
 // app.listen(PORT, () => {
 //   console.log(`🚀 Server running on port ${PORT}`);
 // });
+module.exports = app;
