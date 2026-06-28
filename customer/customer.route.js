@@ -126,11 +126,17 @@ customerRoute.post("/login", async (req, res) => {
 // ================= CUSTOMER COUNT =================
 customerRoute.get("/getcustomercount", async (req, res) => {
   try {
-    const count = await Customer.countDocuments();
-    res.json({ count });
+    const lastCustomer = await Customer.findOne()
+      .sort({ Cid: -1 })
+      .select("Cid");
+
+    const nextCid = lastCustomer ? Number(lastCustomer.Cid) + 1 : 1;
+
+    res.json({ count: nextCid });
+
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Error getting count" });
+    res.status(500).json({ message: "Error getting customer id" });
   }
 });
 // ================= GET CUSTOMER DETAILS =================
