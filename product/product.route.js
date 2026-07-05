@@ -173,6 +173,30 @@ productRoute.put(
     }
   }
 );
+// ================= UPDATE PRODUCT STATUS =================
+productRoute.put("/updateproductstatus/:pid/:status", async (req, res) => {
+  try {
+    await Product.updateOne(
+      { pid: req.params.pid },
+      {
+        $set: {
+          status: req.params.status,
+        },
+      }
+    );
 
+    res.json({
+      success: true,
+      message: "Product status updated successfully",
+    });
+  } catch (err) {
+    console.log(err);
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
 module.exports = productRoute;        
 
