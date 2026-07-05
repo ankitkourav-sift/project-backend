@@ -30,14 +30,21 @@ cityRoute.route('/search/:ctid').get((req, res) => {
 });
 
 // update city
+// update city
 cityRoute.route('/update').put((req, res) => {
 
     City.updateOne(
-        { "ctid": req.body.ctid },
-        { "ctname": req.body.ctname, "stid": req.body.stid }
-    ).then(() => {
+        { ctid: req.body.ctid },
+        {
+            ctname: req.body.ctname,
+            stid: req.body.stid,
+            status: req.body.status
+        }
+    )
+    .then(() => {
         res.send("City updated successfully");
-    }).catch(err => {
+    })
+    .catch(err => {
         res.send(err);
     });
 
