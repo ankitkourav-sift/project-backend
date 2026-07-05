@@ -140,27 +140,33 @@ venderRoute.get(
 );
 
 // ================= STATUS UPDATE =================
-venderRoute.put(
-  "/vendermanage/:vid/:status",
-
-  async (req, res) => {
+venderRoute.put("/vendermanage/:vid/:status", async (req, res) => {
     try {
-      await Vender.updateOne(
-        { Vid: req.params.vid },
 
-        {
-          $set: {
-            Status: req.params.status,
-          },
+        console.log("VID =", req.params.vid);
+        console.log("STATUS =", req.params.status);
+
+        const vendor = await Vender.findOne({
+            Vid: req.params.vid
+        });
+
+        console.log(vendor);
+
+        if (!vendor) {
+            return res.status(404).send("Vendor not found");
         }
-      );
 
-      res.send("Vendor status updated");
+        vendor.Status = req.params.status;
+
+        await vendor.save();
+
+        res.send("Vendor status updated");
+
     } catch (err) {
-      res.status(500).send(err);
+        console.log(err);
+        res.status(500).send(err);
     }
-  }
-);
+});
 
 // ================= UPDATE PROFILE =================
 venderRoute.put(
