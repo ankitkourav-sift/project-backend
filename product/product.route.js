@@ -174,4 +174,67 @@ productRoute.put(
   }
 );
 
+// ================= PRODUCT BY CATEGORY =================
+productRoute.get("/showproductbycatgid/:pcatgid", async (req, res) => {
+  try {
+    const products = await Product.find({
+      pcatgid: Number(req.params.pcatgid),
+    });
+
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
+// ================= PRODUCT BY STATUS =================
+productRoute.get("/showproductstatus/:status", async (req, res) => {
+  try {
+    const products = await Product.find({
+      status: req.params.status,
+    });
+
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
+// ================= UPDATE PRODUCT STATUS =================
+productRoute.put("/updateproductstatus/:pid/:status", async (req, res) => {
+  try {
+    const { pid, status } = req.params;
+
+    const product = await Product.findOneAndUpdate(
+      { pid: Number(pid) },
+      { status },
+      { new: true }
+    );
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Product status updated",
+      product,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+});
+
 module.exports = productRoute;
