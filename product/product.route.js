@@ -1,240 +1,210 @@
-require("dotenv").config();
+import React,{useEffect,useState} from "react";
+import axios from "axios";
+import ReactDOM from "react-dom/client";
+import Bill from "../customerviews/Bill";
+//import "./ProductList.css";
 
-const express = require("express");
-const productRoute = express.Router();
+function ProductList(props)
+{
+    const [itemcount,setItemCount] = useState(0);
+    const [selitems,setSelItems] = useState([]);
+    const [pcatglist,setPCatgList] = useState([]);
+    const [plist,setPList] = useState([]);
+    const [vlist,setVList] = useState([]);
 
-const Product = require("./product.model");
+    useEffect(() => {
+        axios.get("https://project-backend-nka5.vercel.app/product/showproduct")
+        .then((res) => setPList(res.data))
+        .catch((err) => alert(err));
 
-const multer = require("multer");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
+        axios.get("https://project-backend-nka5.vercel.app/productcatg/showproductcatg")
+        .then((res) => setPCatgList(res.data))
+        .catch((err) => alert(err));
 
-const { v2: cloudinary } = require("cloudinary");
+        axios.get("https://project-backend-nka5.vercel.app/vender/getvendercount")
+        .then((res) => setVList(res.data))
+        .catch((err)=> alert(err));
+    },[]);
 
-const { createInventoryForNewProduct } = require("./inventory.route");
+    const handleActiveButton=(pid) => {
+        axios.put("https://project-backend-nka5.vercel.app/product/updateproductstatus/"+pid+"/Active")
+        .then(() => alert("Product Status Updated"))
+        .catch((err) => alert(err));
+    }
 
-// ================= CLOUDINARY CONFIG =================
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUD_API_KEY,
-  api_secret: process.env.CLOUD_API_SECRET,
-});
+    const handleInactiveButton=(pid) =>{
+        axios.put("https://project-backend-nka5.vercel.app/product/updateproductstatus/"+pid+"/Inactive")
+        .then(() => alert("Product Status Updated"))
+        .catch((err) => alert(err)); 
+    }
 
-console.log("Cloudinary Ready");
-
-// ================= CLOUDINARY STORAGE =================
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "product_images",
-    allowed_formats: ["jpg", "jpeg", "png"],
-  },
-});
-
-const upload = multer({
-  storage: storage,
-});
-
-// ================= GET MAX PID =================
-productRoute.get("/getmaxpid", async (req, res) => {
-  try {
-    const products = await Product.find();
-
-    res.send(products);
-  } catch (err) {
-    res.status(500).json({
-      error: err.message,
-    });
-  }
-});
-
-// ================= SAVE PRODUCT =================
-productRoute.post(
-  "/saveproductimage",
-  upload.single("file"),
-
-  async (req, res) => {
-    try {
-      console.log("BODY:", req.body);
-      console.log("FILE:", req.file);
-
-      let imageUrl = "";
-
-      // ================= CLOUDINARY IMAGE URL =================
-      if (req.file) {
-        imageUrl = req.file.path;
-      }
-
-      const lastProduct = await Product.findOne().sort({ pid: -1 });
-
-      const newPid = lastProduct ? lastProduct.pid + 1 : 1;
-
-      const product = new Product({
-        pid: newPid,
-        pname: req.body.pname,
-        pprice: req.body.pprice,
-        oprice: req.body.oprice,
-        pcatgid: req.body.pcatgid,
-        vid: req.body.vid,
-        status: "Active",
-        ppicname: imageUrl,
-      });
-
-      await product.save();
-
-      await createInventoryForNewProduct(
-        product.pid,
-        product.vid,
-        0,
+    const handleCheckOutButton=()=>{
+        if(selitems.length<=0)
         {
-          updatedBy: product.vid,
+            alert("Please Buy Some Product");
         }
-      );
+        else
+        {
+            const root=ReactDOM.createRoot(document.getElementById("root"));
 
-      res.json({
-        success: true,
-        message: "Product Added Successfully",
-        product,
-      });
-    } catch (err) {
-      console.log("SAVE ERROR:", err);
+            let ccid=props.data;
+            let obj = {
+                selitems:selitems,
+                cid:ccid
+            };
 
-      res.status(500).json({
-        success: false,
-        error: err.message,
-      });
-    }
-  }
-);
-
-// ================= SHOW PRODUCTS =================
-productRoute.get("/showproduct", async (req, res) => {
-  try {
-    const products = await Product.find();
-
-    res.send(products);
-  } catch (err) {
-    res.status(500).json(err);
-  }
-});
-
-// ================= PRODUCT BY VENDOR =================
-productRoute.get("/showproductbyvender/:vid", async (req, res) => {
-  try {
-    const products = await Product.find({
-      vid: req.params.vid,
-    });
-
-    res.send(products);
-  } catch (err) {
-    res.status(500).json(err);
-  }
-});
-
-// ================= UPDATE PRODUCT =================
-productRoute.put(
-  "/updateproduct/:pid",
-  upload.single("file"),
-
-  async (req, res) => {
-    try {
-      console.log("UPDATE BODY:", req.body);
-      console.log("UPDATE FILE:", req.file);
-
-      let updateData = {
-        pname: req.body.pname,
-        pprice: req.body.pprice,
-        oprice: req.body.oprice,
-        pcatgid: req.body.pcatgid,
-        vid: req.body.vid,
-        status: req.body.status,
-      };
-
-      // ================= NEW IMAGE =================
-      if (req.file) {
-        updateData.ppicname = req.file.path;
-      }
-
-      await Product.updateOne(
-        { pid: req.params.pid },
-        { $set: updateData }
-      );
-
-      res.json({
-        success: true,
-        message: "Product Updated Successfully",
-      });
-    } catch (err) {
-      console.log("UPDATE ERROR:", err);
-
-      res.status(500).json({
-        success: false,
-        error: err.message,
-      });
-    }
-  }
-);
-
-// ================= PRODUCT BY CATEGORY =================
-productRoute.get("/showproductbycatgid/:pcatgid", async (req, res) => {
-  try {
-    const products = await Product.find({
-      pcatgid: Number(req.params.pcatgid),
-    });
-
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err.message,
-    });
-  }
-});
-
-// ================= PRODUCT BY STATUS =================
-productRoute.get("/showproductstatus/:status", async (req, res) => {
-  try {
-    const products = await Product.find({
-      status: req.params.status,
-    });
-
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err.message,
-    });
-  }
-});
-
-// ================= UPDATE PRODUCT STATUS =================
-productRoute.put("/updateproductstatus/:pid/:status", async (req, res) => {
-  try {
-    const { pid, status } = req.params;
-
-    const product = await Product.findOneAndUpdate(
-      { pid: Number(pid) },
-      { status },
-      { new: true }
-    );
-
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: "Product not found",
-      });
+            root.render(<Bill data={obj}></Bill>)
+        }
     }
 
-    res.json({
-      success: true,
-      message: "Product status updated",
-      product,
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      error: err.message,
-    });
-  }
-});
+    const handleSearch=(evt)=>{
+        if(evt.target.value>0)
+        {
+            axios.get("https://project-backend-nka5.vercel.app/product/showproductbycatgid/"+evt.target.value)
+            .then((res)=> setPList(res.data))
+            .catch((err)=> alert(err));
+        }
+        else
+        {
+            axios.get("https://project-backend-nka5.vercel.app/product/showproduct")
+            .then((res)=> setPList(res.data))
+            .catch((err)=> alert(err));
+        }
+    }
 
-module.exports = productRoute;
+    const handleSearchByVender=(evt) => {
+        if(evt.target.value>0)
+        {
+            axios.get("https://project-backend-nka5.vercel.app/product/showproductbyvender/"+evt.target.value)
+            .then((res) => setPList(res.data))
+            .catch((err)=> alert(err));
+        }
+        else
+        {
+            axios.get("https://project-backend-nka5.vercel.app/product/showproduct")
+            .then((res) => setPList(res.data))
+            .catch((err)=> alert(err));
+        }
+    }
+
+    const handleSearchByStatus=(evt) => {
+        if(evt.target.value!=="0")
+        { 
+            axios.get("https://project-backend-nka5.vercel.app/product/showproductstatus/"+evt.target.value)
+            .then((res) => setPList(res.data))
+            .catch((err)=> alert(err));
+        }
+        else
+        {
+            axios.get("https://project-backend-nka5.vercel.app/product/showproduct")
+            .then((res) => setPList(res.data))
+            .catch((err)=> alert(err));
+        }
+    }
+
+    return (
+  <div className="product-page">
+    <center>
+
+      <h1 className="page-title">Search Products</h1>
+
+      <div className="filters">
+
+        <div className="filter-box">
+          <label>Category</label>
+          <select onChange={handleSearch}>
+            <option value="0">All</option>
+            {pcatglist.map((pcatgitem) => (
+              <option key={pcatgitem.pcatgid} value={pcatgitem.pcatgid}>
+                {pcatgitem.pcatgname}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-box">
+          <label>Vendor</label>
+          <select onChange={handleSearchByVender}>
+            <option value="0">All</option>
+            {vlist.map((vitem) => (
+              <option key={vitem.Vid} value={vitem.Vid}>
+                {vitem.VenderName}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-box">
+          <label>Status</label>
+          <select onChange={handleSearchByStatus}>
+            <option value="0">All</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+
+      </div>
+
+      <h2 className="table-title">Product List</h2>
+
+      <div className="table-wrapper">
+        <table className="product-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Price</th>
+              <th>Offer</th>
+              <th>Category</th>
+              <th>Image</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {plist.map((item) => {
+              const cname = pcatglist.find(
+                (c) => c.pcatgid === item.pcatgid
+              )?.pcatgname;
+
+              return (
+                <tr key={item.pid}>
+                  <td>{item.pid}</td>
+                  <td>{item.pname}</td>
+                  <td>₹{item.pprice}</td>
+                  <td>₹{item.oprice}</td>
+                  <td>{cname}</td>
+
+                  <td>
+                    <img
+                      className="product-img"
+                      src={item.ppicname || "https://via.placeholder.com/100"}
+                      alt=""
+                    />
+                  </td>
+
+                  <td>
+                    <span className={`status ${item.status}`}>
+                      {item.status}
+                    </span>
+                  </td>
+
+                  <td className="action-btns">
+                    <button onClick={() => handleActiveButton(item.pid)}>
+                      Active
+                    </button>
+                    <button onClick={() => handleInactiveButton(item.pid)}>
+                      Inactive
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+    </center>
+  </div>
+);} export default ProductList;
