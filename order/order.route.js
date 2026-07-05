@@ -36,11 +36,16 @@ router.post("/payment-success", async (req, res) => {
 // ================= GET ORDERS BY CUSTOMER =================
 router.get("/getorders/:cid", async (req, res) => {
   try {
-    const data = await Order.find(); // ❌ NO FILTER (ALL DATA)
+    const cid = String(req.params.cid);
 
-    console.log("ALL ORDERS:", data);
+    console.log("Requested CID:", cid);
 
-    res.json(data || []);
+    const data = await Order.find({ cid });
+
+    console.log("Found Orders:", data.length);
+
+    res.json(data);
+
   } catch (err) {
     console.log(err);
     res.status(500).json([]);
