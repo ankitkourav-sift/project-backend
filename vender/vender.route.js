@@ -243,68 +243,55 @@ venderRoute.put(
 let otpStore = {};
 
 // ================= SEND OTP =================
-venderRoute.post(
-  "/send-otp",
+venderRoute.post("/send-otp", async (req, res) => {
+  try {
+    const { VUserId } = req.body;
 
-  async (req, res) => {
-    try {
-      const { VUserId } = req.body;
+    const vendor = await Vender.findOne({ VUserId });
 
-      const vendor = await Vender.findOne({
-        VUserId,
-      });
-
-      if (!vendor) {
-        return res.status(404).json({
-          success: false,
-
-          message: "Vendor not found",
-        });
-      }
-
-      const otp = Math.floor(
-        100000 + Math.random() * 900000
-      ).toString();
-
-      otpStore[VUserId] = otp;
-
-      let transporter =
-        nodemailer.createTransport({
-          service: "gmail",
-
-          auth: {
-            user: process.env.GMAIL_USER,
-
-            pass: process.env.GMAIL_APP_PASS,
-          },
-        });
-
-      await transporter.sendMail({
-        from: process.env.GMAIL_USER,
-
-        to: vendor.VEmail,
-
-        subject: "Vendor Password Reset OTP",
-
-        text: `Your OTP is ${otp}`,
-      });
-
-      res.json({
-        success: true,
-
-        message: "OTP sent",
-      });
-    } catch (err) {
-      console.log(err);
-
-      res.status(500).json({
+    if (!vendor) {
+      return res.status(404).json({
         success: false,
-
-        message: "Error sending OTP",
+        message: "Vendor not found",
       });
     }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    otpStore[VUserId] = otp;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      port: 465,
+      secure: true,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: vendor.VEmail,
+      subject: "Vendor Password Reset OTP",
+      text: `Your OTP is ${otp}. It is valid for 10 minutes.`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+    });
+
+  } catch (err) {
+    console.error("Send OTP Error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
-);
+});
 
 // ================= RESET PASSWORD =================
 venderRoute.post(
