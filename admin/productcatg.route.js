@@ -44,5 +44,17 @@ productcatgRoute.route('/updateproductcatg/:pcatgid/:pcatgname').put((req, res) 
     });
 
 });
+// delete product category
+productcatgRoute.route('/deleteproductcatg/:pcatgid').delete((req, res) => {
+
+    Productcatg.deleteOne({
+        pcatgid: req.params.pcatgid
+    }).then(() => {
+        res.send('Product category deleted successfully');
+    }).catch(err => {
+        res.send(err);
+    });
+
+});
 
 module.exports = productcatgRoute;
