@@ -61,4 +61,115 @@ router.get("/getorder/:billid", async (req, res) => {
   }
 });
 
+
+// ================= CANCEL ORDER =================
+router.put("/cancel/:billid", async (req, res) => {
+  try {
+    const { reason } = req.body;
+
+    const order = await Order.findOne({
+      billid: req.params.billid,
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    if (order.status === "Delivered") {
+      return res.status(400).json({
+        message: "Delivered order cannot be cancelled",
+      });
+    }
+
+    order.status = "Cancelled";
+    order.isCancelled = true;
+    order.cancelReason = reason;
+
+    await order.save();
+
+    res.json({
+      message: "Order cancelled successfully",
+      order,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json(err);
+  }
+});
+
+
+
+// ================= RETURN ORDER =================
+router.put("/return/:billid", async (req, res) => {
+  try {
+    const { reason } = req.body;
+
+    const order = await Order.findOne({
+      billid: req.params.billid,
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    if (order.status !== "Delivered") {
+      return res.status(400).json({
+        message:
+          "Return allowed only after delivery",
+      });
+    }
+
+    order.status = "Return Requested";
+    order.isReturned = true;
+    order.returnReason = reason;
+
+    await order.save();
+
+    res.json({
+      message: "Return request submitted",
+      order,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json(err);
+  }
+});
+
+
+// ================= UPDATE ORDER STATUS =================
+router.put("/status/:billid", async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    const order = await Order.findOne({
+      billid: req.params.billid,
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    order.status = status;
+    if (status === "Delivered") {
+      order.deliveredDate = new Date();
+    }
+
+    await order.save();
+
+    res.json({
+      message: "Status updated",
+      order,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json(err);
+  }
+});
+
 module.exports = router;

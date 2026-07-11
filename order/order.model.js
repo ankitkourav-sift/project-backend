@@ -1,32 +1,76 @@
 const mongoose = require("mongoose");
 
 const OrderSchema = new mongoose.Schema({
-  cid: { type: String, required: true },   // customer id (string safe)
-  billid: { type: String, required: true },
+  cid: {
+    type: String,
+    required: true,
+  },
+
+  billid: {
+    type: String,
+    required: true,
+  },
 
   items: [
     {
       pid: String,
       pname: String,
       qty: Number,
-      price: Number
-    }
+      price: Number,
+    },
   ],
 
-  total: { type: Number, default: 0 },
+  total: {
+    type: Number,
+    default: 0,
+  },
 
   paymentId: String,
   orderId: String,
 
   status: {
     type: String,
-    default: "success"
+    default: "Placed",
+    enum: [
+      "Placed",
+      "Processing",
+      "Shipped",
+      "Delivered",
+      "Cancelled",
+      "Return Requested",
+      "Returned",
+    ],
+  },
+
+  cancelReason: {
+    type: String,
+    default: "",
+  },
+
+  returnReason: {
+    type: String,
+    default: "",
+  },
+
+  isReturned: {
+    type: Boolean,
+    default: false,
+  },
+
+  isCancelled: {
+    type: Boolean,
+    default: false,
+  },
+
+  deliveredDate: {
+    type: Date,
+    default: null,
   },
 
   date: {
     type: Date,
-    default: Date.now
-  }
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model("Order", OrderSchema);
