@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Bill = require("./bill.model");
-
+const Order = require("../order/order.model");
 // ================= SAVE BILL =================
 router.post("/billsave", async (req, res) => {
   try {
@@ -76,23 +76,44 @@ router.put("/updatestatus", async (req, res) => {
   try {
     const { billid, status, updatedBy } = req.body;
 
+    // Bill collection update
     await Bill.updateMany(
-      { billid: billid },
+      { billid },
       {
         $set: {
-          status: status,
-          updatedBy: updatedBy,
+          status,
+          updatedBy,
           updatedAt: new Date(),
         },
       }
     );
 
-    res.json({ message: "Status updated successfully" });
+    // Order collection update
+    const updateData = {
+      status,
+    };
 
+    if (status === "Delivered") {
+      updateData.deliveredDate = new Date();
+    }
+
+    await Order.updateOne(
+      { billid },
+      {
+        $set: updateData,
+      }
+    );
+
+    res.json({
+      message: "Status updated successfully",
+    });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Error updating status" });
+    res.status(500).json({
+      message: "Error updating status",
+    });
   }
+
 });
 // ================= GET STATUS =================
 router.get("/getstatus/:billid", async (req, res) => {
