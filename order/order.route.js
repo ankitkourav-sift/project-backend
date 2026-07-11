@@ -171,5 +171,19 @@ router.put("/status/:billid", async (req, res) => {
     res.status(500).json(err);
   }
 });
+// ================= GET RETURN REQUESTS =================
+router.get("/return-requests", async (req, res) => {
+  try {
+    const orders = await Order.find({
+      status: "Return Requested",
+    });
 
+    res.json(orders);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      message: "Error fetching return requests",
+    });
+  }
+});
 module.exports = router;
