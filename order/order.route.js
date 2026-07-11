@@ -186,4 +186,61 @@ router.get("/return-requests", async (req, res) => {
     });
   }
 });
+
+
+// ================= APPROVE RETURN =================
+router.put("/approve-return/:billid", async (req, res) => {
+  try {
+    const order = await Order.findOne({
+      billid: req.params.billid,
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    order.status = "Returned";
+    order.returnApproved = true;
+    order.returnRejected = false;
+
+    await order.save();
+
+    res.json({
+      message: "Return approved",
+      order,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+
+// ================= REJECT RETURN =================
+router.put("/reject-return/:billid", async (req, res) => {
+  try {
+    const order = await Order.findOne({
+      billid: req.params.billid,
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    order.status = "Delivered";
+    order.returnApproved = false;
+    order.returnRejected = true;
+    await order.save();
+
+    res.json({
+      message: "Return rejected",
+      order,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
 module.exports = router;
