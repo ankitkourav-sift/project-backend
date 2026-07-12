@@ -10,16 +10,39 @@ router.get("/stats", async (req, res) => {
     const totalCustomers = await Customer.countDocuments();
     const totalProducts = await Product.countDocuments();
 
+    const deliveredOrders =
+      await Order.countDocuments({
+        status: "Delivered",
+      });
+
+    const cancelledOrders =
+      await Order.countDocuments({
+        status: "Cancelled",
+      });
+
+    const pendingReturns =
+      await Order.countDocuments({
+        status: "Return Requested",
+      });
+
     const revenue = await Order.aggregate([
       {
         $match: {
-          status: { $ne: "Cancelled" },
+          status: {
+            $nin: [
+              "Cancelled",
+              "Return Requested",
+              "Returned",
+            ],
+          },
         },
       },
       {
         $group: {
           _id: null,
-          total: { $sum: "$total" },
+          total: {
+            $sum: "$total",
+          },
         },
       },
     ]);
@@ -28,6 +51,9 @@ router.get("/stats", async (req, res) => {
       totalOrders,
       totalCustomers,
       totalProducts,
+      deliveredOrders,
+      cancelledOrders,
+      pendingReturns,
       totalRevenue:
         revenue.length > 0
           ? revenue[0].total
