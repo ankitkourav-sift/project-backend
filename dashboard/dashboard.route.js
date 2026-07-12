@@ -1,68 +1,42 @@
 const express = require("express");
 const router = express.Router();
+const Order = require("../order/order.model");
 const Customer = require("../customer/customer.model");
 const Product = require("../product/product.model");
-const Order = require("../order/order.model");
 
 router.get("/stats", async (req, res) => {
   try {
-    const totalCustomers =
-      await Customer.countDocuments();
+    const totalOrders = await Order.countDocuments();
+    const totalCustomers = await Customer.countDocuments();
+    const totalProducts = await Product.countDocuments();
 
-    const totalProducts =
-      await Product.countDocuments();
-
-    const totalOrders =
-      await Order.countDocuments();
-
-    const deliveredOrders =
-      await Order.countDocuments({
-        status: "Delivered",
-      });
-
-    const cancelledOrders =
-      await Order.countDocuments({
-        status: "Cancelled",
-      });
-
-    const pendingReturns =
-      await Order.countDocuments({
-        status: "Return Requested",
-      });
-
-    const revenueData =
-      await Order.aggregate([
-        {
-          $match: {
-            status: "Delivered",
-          },
+    const revenue = await Order.aggregate([
+      {
+        $match: {
+          status: { $ne: "Cancelled" },
         },
-        {
-          $group: {
-            _id: null,
-            total: {
-              $sum: "$total",
-            },
-          },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: "$total" },
         },
-      ]);
-
-    const totalRevenue =
-      revenueData[0]?.total || 0;
+      },
+    ]);
 
     res.json({
+      totalOrders,
       totalCustomers,
       totalProducts,
-      totalOrders,
-      deliveredOrders,
-      cancelledOrders,
-      pendingReturns,
-      totalRevenue,
+      totalRevenue:
+        revenue.length > 0
+          ? revenue[0].total
+          : 0,
     });
   } catch (err) {
     console.log(err);
     res.status(500).json({
-      message: "Server Error",
+      message: "Dashboard error",
     });
   }
 });
