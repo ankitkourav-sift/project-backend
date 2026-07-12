@@ -127,11 +127,10 @@ const dashboardRoute = require(
   "./dashboard/dashboard.route"
 );
 
-app.use("/dashboard", dashboardRoute);
+
 
 // ================= MIDDLEWARE =================
 
-app.use(cors());
 
 app.use(express.json());
 
@@ -142,6 +141,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 // ================= ROUTES =================
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://your-frontend.vercel.app"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 
 app.use("/product", productRoute);
 
@@ -165,6 +174,8 @@ app.use("/customer", customerRoute);
 
 app.use("/order", orderRoute);
 app.use("/email", emailRouter);
+
+app.use("/dashboard", dashboardRoute);
 
 // ================= TEST ROUTE =================
 
