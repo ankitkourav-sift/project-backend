@@ -130,17 +130,6 @@ const dashboardRoute = require(
 
 
 // ================= MIDDLEWARE =================
-
-
-app.use(express.json());
-
-app.use(express.urlencoded({ extended: true }));
-
-app.use(bodyParser.urlencoded({ extended: true }));
-
-app.use(bodyParser.json());
-
-// ================= ROUTES =================
 app.use(
   cors({
     origin: [
@@ -151,6 +140,16 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(express.json());
+
+app.use(express.urlencoded({ extended: true }));
+
+app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(bodyParser.json());
+
+// ================= ROUTES =================
 
 app.use("/product", productRoute);
 
