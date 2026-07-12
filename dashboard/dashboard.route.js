@@ -60,4 +60,16 @@ router.get("/stats", async (req, res) => {
   }
 });
 
+router.get("/all-status", async (req, res) => {
+  try {
+    const data = await Order.find().select(
+      "billid status returnApproved"
+    );
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
 module.exports = router;
