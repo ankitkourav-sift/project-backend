@@ -11,8 +11,10 @@ router.get("/stats", async (req, res) => {
     const totalProducts = await Product.countDocuments();
 
     const deliveredOrders = await Order.countDocuments({
-      status: "Delivered",
-    });
+  status: {
+    $in: ["Delivered", "Returned"],
+  },
+});
 
     const cancelledOrders = await Order.countDocuments({
       status: "Cancelled",
@@ -23,22 +25,20 @@ router.get("/stats", async (req, res) => {
     });
 
     const revenue = await Order.aggregate([
-      {
-        $match: {
-          status: {
-            $in: ["Delivered", "Returned"],
-          },
-        },
+  {
+    $match: {
+      status: "Delivered",
+    },
+  },
+  {
+    $group: {
+      _id: null,
+      total: {
+        $sum: "$total",
       },
-      {
-        $group: {
-          _id: null,
-          total: {
-            $sum: "$total",
-          },
-        },
-      },
-    ]);
+    },
+  },
+]);
 
     res.json({
       totalCustomers,
