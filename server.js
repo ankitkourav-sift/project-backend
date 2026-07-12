@@ -123,6 +123,12 @@ const customerRoute = require("./customer/customer.route.js");
 
 const orderRoute = require("./order/order.route.js");
 
+const dashboardRoute = require(
+  "./dashboard/dashboard.route"
+);
+
+app.use("/dashboard", dashboardRoute);
+
 // ================= MIDDLEWARE =================
 
 app.use(cors());
