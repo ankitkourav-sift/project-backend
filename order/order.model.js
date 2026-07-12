@@ -86,7 +86,27 @@ date: {
   type: Date,
   default: Date.now,
 },
+refundStatus: {
+  type: String,
+  enum: [
+    "Not Required",
+    "Pending",
+    "Refunded"
+  ],
+  default: "Not Required",
+},
+
+refundAmount: {
+  type: Number,
+  default: 0,
+},
+
+refundDate: {
+  type: Date,
+  default: null,
+},
 });
+
 
 
 module.exports = mongoose.model("Order", OrderSchema);

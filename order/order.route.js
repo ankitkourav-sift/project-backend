@@ -86,6 +86,8 @@ router.put("/cancel/:billid", async (req, res) => {
     order.status = "Cancelled";
     order.isCancelled = true;
     order.cancelReason = reason;
+    order.refundStatus = "Pending";
+    order.refundAmount = order.total;
 
     await order.save();
 
@@ -204,6 +206,8 @@ router.put("/approve-return/:billid", async (req, res) => {
     order.status = "Returned";
     order.returnApproved = true;
     order.returnRejected = false;
+    order.refundStatus = "Pending";
+    order.refundAmount = order.total;
 
     await order.save();
 
@@ -237,6 +241,48 @@ router.put("/reject-return/:billid", async (req, res) => {
 
     res.json({
       message: "Return rejected",
+      order,
+    });
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
+
+// ================= GET REFUND REQUESTS =================
+router.get("/refund-requests", async (req, res) => {
+  try {
+    const orders = await Order.find({
+      refundStatus: "Pending",
+    });
+
+    res.json(orders);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json(err);
+  }
+});
+
+
+//=========================================
+router.put("/refund/:billid", async (req, res) => {
+  try {
+    const order = await Order.findOne({
+      billid: req.params.billid,
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        message: "Order not found",
+      });
+    }
+
+    order.refundStatus = "Refunded";
+    order.refundDate = new Date();
+
+    await order.save();
+
+    res.json({
+      message: "Refund completed",
       order,
     });
   } catch (err) {
