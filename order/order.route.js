@@ -2,6 +2,59 @@ const express = require("express");
 const router = express.Router();
 const Order = require("./order.model");
 
+
+
+//++++++++++++++++++++++++++++++++++
+// ================= CHECKOUT =================
+router.post("/checkout", async (req, res) => {
+  try {
+    const {
+      customerName,
+      mobile,
+      address,
+      deliveryType,
+      paymentMethod,
+      items,
+    } = req.body;
+
+    // Validation
+    if (
+      !customerName ||
+      !mobile ||
+      !address ||
+      !address.house ||
+      !address.area ||
+      !address.city ||
+      !address.state ||
+      !address.pincode
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Please fill all required address fields",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Checkout details verified successfully",
+      checkout: {
+        customerName,
+        mobile,
+        address,
+        deliveryType,
+        paymentMethod,
+        items,
+      },
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      message: "Checkout failed",
+    });
+  }
+});
+
 // ================= SAVE ORDER =================
 router.post("/payment-success", async (req, res) => {
   try {

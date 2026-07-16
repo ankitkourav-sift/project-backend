@@ -105,6 +105,44 @@ refundDate: {
   type: Date,
   default: null,
 },
+
+customerName: {
+  type: String,
+  required: true,
+},
+
+mobile: {
+  type: String,
+  required: true,
+},
+
+address: {
+  house: String,
+  area: String,
+  landmark: String,
+  city: String,
+  state: String,
+  pincode: String,
+},
+
+deliveryType: {
+  type: String,
+  enum: ["Standard", "Express"],
+  default: "Standard",
+},
+
+paymentMethod: {
+  type: String,
+  enum: ["Online", "COD"],
+  default: "Online",
+},
+
+paymentStatus: {
+  type: String,
+  enum: ["Pending", "Paid"],
+  default: "Pending",
+},
+
 });
 
 
