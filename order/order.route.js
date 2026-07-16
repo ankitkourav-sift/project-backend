@@ -65,15 +65,38 @@ router.post("/payment-success", async (req, res) => {
       0
     );
 
-    const order = new Order({
-      cid: String(data.cid),
-      billid: data.billid,
-      items: data.items || [],
-      total,
-      paymentId: data.razorpayPaymentId,
-      orderId: data.razorpayOrderId,
-      status: "Processing",
-    });
+   const order = new Order({
+  cid: String(data.cid),
+  billid: data.billid,
+
+  customerName: data.customerName,
+  mobile: data.mobile,
+
+  address: {
+    house: data.address.house,
+    area: data.address.area,
+    landmark: data.address.landmark,
+    city: data.address.city,
+    state: data.address.state,
+    pincode: data.address.pincode,
+  },
+
+  deliveryType: data.deliveryType,
+  paymentMethod: data.paymentMethod,
+
+  paymentStatus:
+    data.paymentMethod === "COD"
+      ? "Pending"
+      : "Paid",
+
+  items: data.items || [],
+  total,
+
+  paymentId: data.razorpayPaymentId,
+  orderId: data.razorpayOrderId,
+
+  status: "Processing",
+});
 
     await order.save();
 
