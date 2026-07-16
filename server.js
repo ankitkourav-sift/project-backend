@@ -142,7 +142,7 @@ app.use(
     credentials: true,
   })
 );
-app.use("/address", addressRoute);
+
 
 app.use(express.json());
 
@@ -178,6 +178,7 @@ app.use("/order", orderRoute);
 app.use("/email", emailRouter);
 
 app.use("/dashboard", dashboardRoute);
+app.use("/address", addressRoute);
 
 // ================= TEST ROUTE =================
 
