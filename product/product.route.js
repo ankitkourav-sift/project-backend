@@ -4,6 +4,7 @@ const express = require("express");
 const productRoute = express.Router();
 
 const Product = require("./product.model");
+const Inventory = require("../product/inventory.model");
 
 const multer = require("multer");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
@@ -109,11 +110,35 @@ productRoute.post(
 // ================= SHOW PRODUCTS =================
 productRoute.get("/showproduct", async (req, res) => {
   try {
-    const products = await Product.find();
 
-    res.send(products);
+    const products = await Product.find().lean();
+
+    const inventory = await Inventory.find().lean();
+
+    const stockMap = {};
+
+    inventory.forEach((item) => {
+
+      stockMap[item.pid] =
+        (stockMap[item.pid] || 0) + item.stock;
+
+    });
+
+    const result = products.map((p) => ({
+      ...p,
+      stock: stockMap[p.pid] || 0,
+    }));
+
+    res.json(result);
+
   } catch (err) {
-    res.status(500).json(err);
+
+    console.log(err);
+
+    res.status(500).json({
+      message: err.message,
+    });
+
   }
 });
 
