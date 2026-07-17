@@ -169,14 +169,14 @@ router.delete("/:id", async (req, res) => {
     });
 
   } catch (err) {
-  console.log(err);
+  console.error("ADDRESS ERROR =>", err);
 
   res.status(500).json({
     success: false,
     message: err.message,
-    error: err
+    error: err,
   });
-} 
+}
 });
 
 module.exports = router;
