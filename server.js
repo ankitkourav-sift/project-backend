@@ -128,7 +128,7 @@ const addressRoute = require("./address/address.route");
 const dashboardRoute = require(
   "./dashboard/dashboard.route"
 );
-
+const newsletterRoute = require("./newsletter.route");
 
 
 // ================= MIDDLEWARE =================
@@ -180,10 +180,15 @@ app.use("/email", emailRouter);
 app.use("/dashboard", dashboardRoute);
 app.use("/address", addressRoute);
 
+
+app.use("/newsletter", newsletterRoute);
+
 // ================= TEST ROUTE =================
 
 app.get("/", (req, res) => {
   res.send("✅ API Running Successfully");
+
+
 });
 
 // ================= DATABASE =================
