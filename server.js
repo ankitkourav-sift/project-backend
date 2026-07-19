@@ -138,7 +138,7 @@ app.use(
       "http://localhost:3000",
       "https://project-frontend-grrf.vercel.app"
     ],
-     methods: [
+    methods: [
       "GET",
       "POST",
       "PUT",
@@ -146,9 +146,15 @@ app.use(
       "DELETE",
       "OPTIONS"
     ],
-    credentials: true,
+    allowedHeaders:[
+      "Content-Type",
+      "Authorization"
+    ],
+    credentials:true,
   })
 );
+
+app.options("*", cors());
 
 
 app.use(express.json());
