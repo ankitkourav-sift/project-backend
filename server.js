@@ -138,7 +138,14 @@ app.use(
       "http://localhost:3000",
       "https://project-frontend-grrf.vercel.app"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     methods: [
+      "GET",
+      "POST",
+      "PUT",
+      "PATCH",
+      "DELETE",
+      "OPTIONS"
+    ],
     credentials: true,
   })
 );
