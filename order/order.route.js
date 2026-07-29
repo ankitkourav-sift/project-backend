@@ -182,11 +182,15 @@ router.put("/cancel/:billid", async (req, res) => {
 // ================= RETURN ORDER =================
 router.put("/return/:billid", async (req, res) => {
   try {
-    const { reason } = req.body;
+
+    console.log("Bill ID:", req.params.billid);
+    console.log("Reason:", req.body.reason);
 
     const order = await Order.findOne({
       billid: req.params.billid,
     });
+
+    console.log("Found Order:", order);
 
     if (!order) {
       return res.status(404).json({
@@ -194,16 +198,11 @@ router.put("/return/:billid", async (req, res) => {
       });
     }
 
-    if (order.status !== "Delivered") {
-      return res.status(400).json({
-        message:
-          "Return allowed only after delivery",
-      });
-    }
+    console.log("Current Status:", order.status);
 
     order.status = "Return Requested";
     order.isReturned = true;
-    order.returnReason = reason;
+    order.returnReason = req.body.reason;
 
     await order.save();
 
@@ -211,9 +210,15 @@ router.put("/return/:billid", async (req, res) => {
       message: "Return request submitted",
       order,
     });
+
   } catch (err) {
-    console.log(err);
-    res.status(500).json(err);
+
+    console.error("RETURN ERROR:", err);
+
+    res.status(500).json({
+      message: err.message,
+      stack: err.stack,
+    });
   }
 });
 
