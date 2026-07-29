@@ -106,16 +106,18 @@ refundDate: {
   default: null,
 },
 
+
+
+
 customerName: {
   type: String,
-  required: true,
+  default: "",
 },
 
 mobile: {
   type: String,
-  required: true,
+  default: "",
 },
-
 address: {
   house: String,
   area: String,
